@@ -126,30 +126,49 @@ Some/
 
 ## Примеры использования
 
+### Поиск данных
+
 ```python
 import threedb
+from threedb import simple_storage
+
 db = threedb.connect('.', type='simple')
 rows = db.search()
 print(rows)
 >>> [('data_1.txt', 'etalon_1.txt'), ('data_2.txt', 'etalon_2.txt')]
 
 # позвращает итератор
-for row in db.isearch(".", type='simple'):
-    print(row)
+for part in db.isearch(".", storage=simple_storage):
+    print(part)
 
-('data_1.txt', 'etalon_1.txt')
-('data_2.txt', 'etalon_2.txt')
+>>> ('data_1.txt', 'etalon_1.txt')
+>>> ('data_2.txt', 'etalon_2.txt')
 
 # поиск по дереву
-for row in db.search("Some"):
-    print(row)
+for part in db.search("Some"):
+    print(part)
 
-('Some/BugFix44/ServiceA/data_1.txt', 'Some/BugFix44/ServiceA/etalon_1.txt')
+>>> ('Some/BugFix44/ServiceA/data_1.txt', 'Some/BugFix44/ServiceA/etalon_1.txt')
+>>> etc.
 
 # поиск по индексу
-db.search('.', '0001', '0002')
+db.search('.', '0001' | '0002') 
+db.search('.', '0001' & '0002')
 
 # поиск по тагу
 db.search('.', 'ci')
+```
 
+### Чтение данных
+
+Чтение данных. По умолчанию все текстовые файлы читаются в память.
+
+```python
+import threedb
+
+db = threedb.connect('.', type=simple_storage)
+rows = db.load('.')
+print(rows)
+
+>>> [{"data_1_txt": "1", "etalon_1_txt": "1"}, {"data_2_txt": "2", "etalon_2_txt": "2"}]
 ```
