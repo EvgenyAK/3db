@@ -123,3 +123,33 @@ Some/
             data_1.txt
             etalon_1.txt
 ```
+
+## Примеры использования
+
+```python
+import threedb
+db = threedb.connect('.', type='simple')
+rows = db.search()
+print(rows)
+>>> [('data_1.txt', 'etalon_1.txt'), ('data_2.txt', 'etalon_2.txt')]
+
+# позвращает итератор
+for row in db.isearch(".", type='simple'):
+    print(row)
+
+('data_1.txt', 'etalon_1.txt')
+('data_2.txt', 'etalon_2.txt')
+
+# поиск по дереву
+for row in db.search("Some"):
+    print(row)
+
+('Some/BugFix44/ServiceA/data_1.txt', 'Some/BugFix44/ServiceA/etalon_1.txt')
+
+# поиск по индексу
+db.search('.', '0001', '0002')
+
+# поиск по тагу
+db.search('.', 'ci')
+
+```
