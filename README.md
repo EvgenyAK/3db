@@ -4,7 +4,7 @@
 
 ## Возможности хранения
 
-### Плоский список фалов
+### Плоский список файлов
 
 ```
 числовой индекс
@@ -14,7 +14,7 @@ etalon_1.txt
 data_2.txt
 etalon_2.txt
 
-или 
+или в начале
 
 0001_data.txt
 0001_etalon.txt
@@ -56,7 +56,7 @@ ServiceB/
         data_1.txt
         etalon_1.txt
     ....
-IntegrationServiceAServiceB
+IntegrationServiceAServiceB/
     10001_ServiceAUp_ServiceBDown/
         data_1.txt
         etalon_1.txt
@@ -69,11 +69,24 @@ IntegrationServiceAServiceB
         data_B_1.txt
         data_B_1.txt
     ....
+Some/
+    BugFix44/
+        ServiceA/
+            data_1.txt
+            etalon_2.txt
+        ServiceB/
+            data_2.txt
+            etalon_2.txt
+    ServiceD
+        001_A/
+            data_1.txt
+            etalon_1.txt
 ```
 
 ## Тегирование данных
 
-Часто данные нужно тегировать, для этого можно использовать фал *metadata.json*
+Часто удобно тегировать данные и производить выборки по произвольным тагам.
+Теги прописываюися в фале *metadata.yaml*.
 ```
 $ cat metadata.yaml
 
@@ -86,8 +99,27 @@ tags:
        - serviceA
        - serviceB
 0002:
-   # Исклбючить таг serviceC
+   # Исключить таг serviceC
    tags:
        - serviceC:false
 ```
 
+### Древовидная структура metadata.yaml
+Поддержка нескольких вложенных файлов metadata.yaml для удобства разнесения тегов данных.
+
+```
+Some/
+    metadata.yaml # tags: notci
+    BugFix44/
+        metadata.yaml # tags: bugfix
+        ServiceA/
+            data_1.txt
+            etalon_2.txt
+        ServiceB/
+            data_2.txt
+            etalon_2.txt
+    ServiceD
+        001_A/
+            data_1.txt
+            etalon_1.txt
+```
