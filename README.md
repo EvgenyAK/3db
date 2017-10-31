@@ -2,22 +2,31 @@
 
 Небольшая БД для хранения и работы с данными используемыми при проведении [DDT](https://en.wikipedia.org/wiki/Data-driven_testing).
 
-### Возможности хранения
+## Возможности хранения
 
 ### Плоский список фалов
 
 ```
+числовой индекс
+
 data_1.txt
 etalon_1.txt
 data_2.txt
 etalon_2.txt
 
-или
+или 
 
 0001_data.txt
 0001_etalon.txt
 0002_data.txt
 0002_etalon.txt
+
+или буквенный
+
+data_A.txt
+etalon_A.txt
+data_B.txt
+etalon_B.txt
 ```
 
 ### Плоская структура папок
@@ -54,5 +63,31 @@ IntegrationServiceAServiceB
     10002_ServiceADown_ServiceBUp/
         data_1.txt
         etalon_1.txt
+    10003_ServiceAUp_ServiceBUp/
+        data_A_1.txt
+        etalon_A_1.txt
+        data_B_1.txt
+        data_B_1.txt
     ....
 ```
+
+## Тегирование данных
+
+Часто данные нужно тегировать, для этого можно использовать фал *metadata.json*
+```
+$ cat metadata.yaml
+
+# навесить на все тесты таг serviceA
+tags:
+    - serviceA
+0001:
+   # теги навесить только на serviceA, serviceB
+   tags:
+       - serviceA
+       - serviceB
+0002:
+   # Исклбючить таг serviceC
+   tags:
+       - serviceC:false
+```
+
