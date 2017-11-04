@@ -1,6 +1,6 @@
 
 from os.path import join, exists, basename
-from utils import *
+from .utils import *
 import itertools
 import glob
 import yaml
