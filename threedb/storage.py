@@ -1,5 +1,5 @@
 
-from os.path import join, exists
+from os.path import join, exists, basename
 from utils import *
 import itertools
 import glob
@@ -22,9 +22,8 @@ def _filter_rows(rows, *tags):
     if not tags:
         return rows
 
-    tags = set(tags)
-
     filtered = []
+    tags = set(tags)
     for row in rows:
         index = [row[0]]
         path = row[2] or []
@@ -48,21 +47,13 @@ class SimpleStorage(_BaseStorage):
 
     def read(self):
         res = []
-        for folder in os.listdir(self.storage):
-            dir = join(self.storage, folder)
-
-            files = filter_files(
-                [METADATA],
-                normalize_file_name(
-                    glob.iglob(join(dir, "*")))
-            )
-
-            res.append((
-                folder,
-                dir,
-                _read_tags(join(dir, METADATA)),
-                files
-            ))
+        for root, _, files in os.walk(self.storage):
+            files = filter_files([METADATA], files)
+            row = (basename(root),
+                   root,
+                   _read_tags(join(root, METADATA)),
+                   files)
+            res.append(row)
         return res
 
     def load(self, row):
@@ -70,10 +61,6 @@ class SimpleStorage(_BaseStorage):
 
 
 simple_storage = SimpleStorage
-
-
-def TreeStorage(_BaseStorage):
-    pass
 
 
 class ThreeDB:
@@ -97,5 +84,5 @@ if __name__ == '__main__':
     path = "test"
 
     db = ThreeDB(path)
-    for item in db.search("autotest", "ci"):
+    for item in db.search():
         print(item, [i for i in item[-1]])
