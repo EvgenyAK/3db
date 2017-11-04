@@ -20,19 +20,21 @@ def _read_tags(self, path, metadata_file):
             return tags
 
 
-def _filter_rows(self, rows, tags=None):
-    if None:
-        yield rows
+def _filter_rows(rows, *tags):
+    if not tags:
+        return rows
 
-    tags = set([tags] if type(tags) == str else tags)
+    tags = set(tags)
 
+    filtered = []
     for row in rows:
         index = [row[0]]
         path = row[2] or []
-        data_tags = set(index) + set(path)
+        data_tags = set(index) | set(path)
 
-        if not (data_tags - tags):
-            yield row
+        if (data_tags & tags):
+            filtered.append(row)
+    return filtered
 
 
 class _BaseStorage:
@@ -47,21 +49,16 @@ class SimpleStorage(_BaseStorage):
         _BaseStorage.__init__(self, *args, **kwargs)
 
     def read(self):
-        """
-        [(dirname, data_path, tags or None, data_iterator), ...]
-        """
         res = []
         for folder in os.listdir(self.storage):
             dir = join(self.storage, folder)
             res.append((
                 folder,
                 dir,
+                None,
                 glob.iglob(join(dir, "*")))
             )
         return res
-
-    def load(self, tags):
-        pass
 
 
 simple_storage = SimpleStorage
@@ -73,21 +70,17 @@ def TreeStorage(_BaseStorage):
 
 class ThreeDB:
 
-    def __init__(self, storage, storage_type=simple_storage):
-        self._storage = storage
-        self._storage_type = storage_type(self._storage)
+    def __init__(self, path, storage_type=simple_storage):
+        self._path = path
+        self._storage = storage_type(self._path)
 
-    def search(self, tags=None):
-        return _filter_rows()
+    def search(self, *tags):
+        rows = self._storage.read()
+        if not tags:
+            return rows
+        return _filter_rows(rows, *tags)
 
     def load(self, tags):
         pass
 
 connect = ThreeDB
-
-if __name__ == '__main__':
-    path = "test"
-    stor = SimpleStorage(path)
-
-    for row in stor.read():
-        print(row)
