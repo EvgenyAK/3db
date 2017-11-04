@@ -1,20 +1,18 @@
 
 from os.path import join, exists
+from utils import *
 import itertools
 import glob
 import yaml
 import os
 
 
-def _read_tags(self, path, metadata_file):
-    """
-    cat metadata.yaml
-    tags:
-        - ci
-    """
-    meta_path = join(path, metadata_file)
-    if exists(meta_path):
-        with open(meta_path, "r") as fd:
+METADATA = "metadata.yaml"
+
+
+def _read_tags(metadata):
+    if exists(metadata):
+        with open(metadata, "r") as fd:
             metadata = yaml.load(fd)
             tags = metadata["tags"]
             return tags
@@ -52,13 +50,23 @@ class SimpleStorage(_BaseStorage):
         res = []
         for folder in os.listdir(self.storage):
             dir = join(self.storage, folder)
+
+            files = filter_files(
+                [METADATA],
+                normalize_file_name(
+                    glob.iglob(join(dir, "*")))
+            )
+
             res.append((
                 folder,
                 dir,
-                None,
-                glob.iglob(join(dir, "*")))
-            )
+                _read_tags(join(dir, METADATA)),
+                files
+            ))
         return res
+
+    def load(self, row):
+        pass
 
 
 simple_storage = SimpleStorage
@@ -80,7 +88,14 @@ class ThreeDB:
             return rows
         return _filter_rows(rows, *tags)
 
-    def load(self, tags):
+    def load(self, *tags):
         pass
 
 connect = ThreeDB
+
+if __name__ == '__main__':
+    path = "test"
+
+    db = ThreeDB(path)
+    for item in db.search("autotest", "ci"):
+        print(item, [i for i in item[-1]])
