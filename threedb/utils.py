@@ -13,3 +13,14 @@ def filter_files(skip, seq):
 
 def normalize_file_name(files):
     return map(lambda x: os.path.basename(x), files)
+
+
+def read_txt(root, file):
+    file_path = os.path.join(root, file)
+    with open(file_path, 'r') as fd:
+        return fd.read()
+
+
+def file_name(file):
+    name = os.path.basename(file).replace(".", "_")
+    return name
