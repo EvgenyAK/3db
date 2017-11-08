@@ -1,8 +1,9 @@
 
 from os.path import join, exists, basename
-from utils import *
+from .utils import *
 import yaml
 import os
+import re
 
 
 METADATA = "metadata.yaml"
@@ -23,8 +24,8 @@ def _filter_rows(rows, *tags):
     filtered = []
     tags = set(tags)
     for row in rows:
-        index = [row[0]]
-        path = row[2] or []
+        index = [row["doc_id"]]
+        path = row["ref"] or []
         data_tags = set(index) | set(path)
 
         if (data_tags & tags):
@@ -56,18 +57,30 @@ class SimpleStorage(_BaseStorage):
     def read(self):
         res = []
         for root, _, files in os.walk(self._storage_path):
-            # files = filter_files([METADATA], files)
-            row = (basename(root),
-                   root,
-                   _read_tags(join(root, METADATA)),
-                   files)
-            res.append(row)
+            if files:
+                row = (basename(root),
+                       root,
+                       _read_tags(join(root, METADATA)),
+                       files)
+                res.append(row)
         return res
 
 
 class Config:
     load_data = True
     pair = True
+    alias = {
+        "etalon": [
+            "etalon.*"
+        ],
+        "data": [
+            "data.*"
+        ]
+    }
+
+    ignore = [
+        "^[0-9]"
+    ]
 
 
 simple_storage = SimpleStorage
@@ -82,17 +95,28 @@ class StorageProxy:
     def read(self):
         res = []
         for each in self._storage.read():
+            ignore_pattern = "|".join(self._config.ignore)
             ref = each[1]
             single_doc = Document(doc_id=each[0],
                                   ref=ref,
                                   tags=each[2])
+
             for file in each[3]:
+                if re.findall(ignore_pattern, file):
+                    continue
+
                 name = basename(file)
                 if self._config.pair:
                     name = name.split(".")[0]
 
-                if self._config.load_data:
-                    single_doc[name] = read_txt(ref, file)
+                alias = self._config.alias
+                for key in alias:
+                    pattern = "|".join(alias[key])
+
+                    if re.findall(pattern, file):
+                        name = key
+
+                single_doc[name] = read_txt(ref, file)
 
             res.append(single_doc)
         return res
@@ -114,18 +138,17 @@ class ThreeDB:
         rows = self._storage.read()
         if not tags:
             return rows
-        # return _filter_rows(rows, *tags)
+        return _filter_rows(rows, *tags)
 
 
 connect = ThreeDB
 
 
 if __name__ == '__main__':
+    from pprint import pprint
     path = "threedb/test"
 
     db = ThreeDB(path)
-    for item in db.search():
-        print(item.keys())
-
-        print(item["ref"])
-        print(item["doc_id"])
+    for item in db.search('1', '9'):
+        pprint(item)
+        pprint(item['etalon'])

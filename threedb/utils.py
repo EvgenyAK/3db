@@ -17,8 +17,7 @@ def normalize_file_name(files):
 
 def read_txt(root, file):
     file_path = os.path.join(root, file)
-    with open(file_path, 'r') as fd:
-        return fd.read()
+    return open(file_path, 'r')
 
 
 def file_name(file):
