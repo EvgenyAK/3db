@@ -17,7 +17,7 @@ def _read_tags(metadata):
             return tags
 
 
-def _filter_rows(rows, *tags):
+def _filter_rows(rows, strict=False, *tags):
     if not tags:
         return rows
 
@@ -25,11 +25,18 @@ def _filter_rows(rows, *tags):
     tags = set(tags)
     for row in rows:
         index = [row["doc_id"]]
-        path = row["ref"] or []
+        path = row["tags"] or []
         data_tags = set(index) | set(path)
+
+        if strict:
+            if not bool(tags - data_tags):
+                filtered.append(row)
+                continue
+            continue
 
         if (data_tags & tags):
             filtered.append(row)
+
     return filtered
 
 
@@ -134,11 +141,11 @@ class ThreeDB:
         self._storage = StorageProxy(self._config, storage_type(self._path))
         self._filter = filter or Filter()
 
-    def search(self, *tags):
+    def search(self, strict=False, *tags):
         rows = self._storage.read()
         if not tags:
             return rows
-        return _filter_rows(rows, *tags)
+        return _filter_rows(rows, strict, *tags)
 
 
 connect = ThreeDB
