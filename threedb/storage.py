@@ -75,7 +75,6 @@ class SimpleStorage(_BaseStorage):
 
 class Config:
     load_data = True
-    pair = True
     alias = {
         "etalon": [
             "etalon.*"
@@ -112,9 +111,7 @@ class StorageProxy:
                 if re.findall(ignore_pattern, file):
                     continue
 
-                name = basename(file)
-                if self._config.pair:
-                    name = name.split(".")[0]
+                name = basename(file).replace(".", "_")
 
                 alias = self._config.alias
                 for key in alias:
@@ -129,8 +126,9 @@ class StorageProxy:
         return res
 
 
-class Filter:
-    pass
+# class Filter:
+#     def filter_by_tags(data_tags, query): pass
+#     def ignore(file, ignored): pass
 
 
 class ThreeDB:
@@ -149,13 +147,3 @@ class ThreeDB:
 
 
 connect = ThreeDB
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-    path = "threedb/test"
-
-    db = ThreeDB(path)
-    for item in db.search('1', '9'):
-        pprint(item)
-        pprint(item['etalon'])

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from threedb import connect
 import argparse
 
 
