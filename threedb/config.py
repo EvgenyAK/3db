@@ -18,3 +18,5 @@ class Config(dict):
     def _load_config(self, file):
         with open(file, "r") as fd:
             return yaml.load(fd.read())
+
+load_config = Config

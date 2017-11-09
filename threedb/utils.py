@@ -23,3 +23,8 @@ def read_txt(root, file):
 def file_name(file):
     name = os.path.basename(file).replace(".", "_")
     return name
+
+
+def read_txt(file):
+    with open(file, "r") as fd:
+        return fd.read()
