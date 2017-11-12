@@ -1,9 +1,9 @@
 
 from os.path import join, exists, basename
-from .filter import Filter
+from .filter import SetFilter
 from .config import Config
 from .utils import *
-import itertools
+import json
 import yaml
 import os
 import re
@@ -20,27 +20,45 @@ def _read_tags(metadata):
             return tags
 
 
-def _filter_rows(rows, strict=False, *tags):
-    if not tags:
-        return rows
+class DataItem:
 
-    filtered = []
-    tags = set(tags)
-    for row in rows:
-        index = [row["doc_id"]]
-        path = row["tags"] or []
-        data_tags = set(index) | set(path)
+    def __init__(self, root, fp):
+        self._root = root
+        self._fp = fp
 
-        if strict:
-            if not bool(tags - data_tags):
-                filtered.append(row)
-                continue
-            continue
+    def _handler(self):
+        return open(join(self._root, self._fp), 'r')
 
-        if (data_tags & tags):
-            filtered.append(row)
+    @property
+    def text(self):
+        return self._handler().read()
 
-    return filtered
+    def json(self):
+        return json.load(self._handler())
+
+
+class Record(dict):
+
+    def __init__(self, index, ref, tags, **data):
+        super(Record, self).__init__(self)
+        self["index"] = index
+        self["ref"] = ref
+        self["tags"] = tags or []
+        self.update((field, DataItem(ref, data[field])) for field in data)
+
+    @property
+    def index(self):
+        return self["index"]
+
+    @property
+    def tags(self):
+        return self["tags"]
+
+    @property
+    def ref(self):
+        return self["ref"]
+
+Element = Record
 
 
 class _BaseStorage:
@@ -50,60 +68,37 @@ class _BaseStorage:
         self._schema = schema
 
 
-class Document(dict):
-
-    def __init__(self, **kwargs):
-        super(Document, self).__init__(self)
-        self.update(**kwargs)
-
-
-Element = Document
-
-
-def _match_files_by_pattern(files, pattern):
-    for file in files:
-        if re.findall(pattern, file):
-            yield file
-
-
-def _loader(root, files):
-    print(files)
-    for file in files:
-        print(file)
-        fp = join(root, file)
-        with open(fp) as fd:
-            yield fd.read()
-
-
 class SimpleStorage(_BaseStorage):
 
     def __init__(self, *args, **kwargs):
         _BaseStorage.__init__(self, *args, **kwargs)
 
-    def _impose_scheme(self, schema, root, files):
+    def _impose_scheme(self, root, files):
         res = {}
-        schema = self._schema
-        for field in schema:
-            match = Filter().regxp_filter(files, schema[field]["match"])
-            print(match)
-            if match:
-                res[field] = _loader(root, match)
+        for field in self._schema:
+            p = "|".join(self._schema[field]["match"])
+            for file in files:
+                data_fields = re.findall(p, file)
+                if data_fields:
+                    res[field] = data_fields[0]
+                    break
         return res
 
     def read(self):
-        res = []
+        records = []
         for root, _, files in os.walk(self._storage_path):
             if files:
-                fields = self._impose_scheme(self._schema, root, files)
+                fields = self._impose_scheme(root, files)
+
                 elem = Element(
                     index=basename(root),
-                    rex=root,
+                    ref=root,
                     tags=_read_tags(join(root, METADATA)),
                     **fields
                 )
 
-                res.append(elem)
-        return res
+                records.append(elem)
+        return records
 
 simple_storage = SimpleStorage
 
@@ -124,37 +119,17 @@ class ThreeDB:
                  storage_type=simple_storage):
         self._config = config or Config()
         self._path = path
+        self._schema = schema or self._config.get("schema")
         self._storage = StorageProxy(
             self._config,
-            storage_type(self._path, schema=schema))
-        self._filter = filter or Filter()
+            storage_type(self._path, schema=self._schema))
+        self._filter = SetFilter()
 
     def search(self, strict=False, *tags):
-        rows = self._storage.read()
+        records = self._storage.read()
         if not tags:
-            return rows
-        return _filter_rows(rows, strict, *tags)
+            return records
+        return self._filter.apply_filter(records, strict, tags)
 
 
 connect = ThreeDB
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-
-    path = "test"
-    config = {
-        'ignore': ['^[0-9]'],
-        'schema': {
-            'data': {
-                'load': False, 'match': ['data.[0-9]']},
-            'etalon': {
-                'load': True,
-                'match': ['etalon.[0-9]'],
-                'type': 'text'}}}
-
-    db = ThreeDB(path, schema=config["schema"])
-    rows = db.search()
-    for row in rows:
-        print(row)
-        print([item for item in row["data"]])  # read data

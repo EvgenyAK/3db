@@ -11,6 +11,7 @@ parser.add_argument("-s", "--strict", action="store_true")
 parser.add_argument("path")
 args = parser.parse_args()
 
-db = connect(args.path, config=load_config(args.config))
+config = load_config(args.config)
+db = connect(args.path, config=config)
 for item in db.search(args.strict, *tuple(args.tags or [])):
     print(item)

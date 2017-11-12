@@ -1,16 +1,22 @@
 
-import re
+class SetFilter:
 
+    def apply_filter(self, items, strict=None, filter=None):
+        if not filter:
+            return items
 
-def _match_files_by_pattern(files, pattern):
-    for file in files:
-        if re.findall(pattern, file):
-            yield file
+        filtered = []
+        tags = set(filter or [])
+        for item in items:
+            data_tags = set(item.index) | set(item.tags)
 
+            if strict:
+                if not bool(tags - data_tags):
+                    filtered.append(item)
+                    continue
+                continue
 
-class Filter:
+            if (data_tags & tags):
+                filtered.append(item)
 
-    def regxp_filter(self, files, filters):
-        pattern = "|".join(filters)
-        match = _match_files_by_pattern(files, pattern)
-        return match
+        return filtered
