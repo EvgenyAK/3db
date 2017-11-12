@@ -75,13 +75,16 @@ class SimpleStorage(_BaseStorage):
 
     def _impose_scheme(self, root, files):
         res = {}
-        for field in self._schema:
-            p = "|".join(self._schema[field]["match"])
-            for file in files:
-                data_fields = re.findall(p, file)
-                if data_fields:
-                    res[field] = data_fields[0]
-                    break
+        if self._schema:
+            for field in self._schema:
+                p = "|".join(self._schema[field]["match"])
+                for file in files:
+                    data_fields = re.findall(p, file)
+                    if data_fields:
+                        res[field] = data_fields[0]
+                        break
+        else:
+            res = dict((file.replace(".", "_"), file) for file in files)
         return res
 
     def read(self):
