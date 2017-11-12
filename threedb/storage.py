@@ -1,6 +1,9 @@
 
 from os.path import join, exists, basename
+from .filter import SetFilter
+from .config import Config
 from .utils import *
+import json
 import yaml
 import os
 import re
@@ -17,43 +20,52 @@ def _read_tags(metadata):
             return tags
 
 
-def _filter_rows(rows, strict=False, *tags):
-    if not tags:
-        return rows
+class DataItem:
 
-    filtered = []
-    tags = set(tags)
-    for row in rows:
-        index = [row["doc_id"]]
-        path = row["tags"] or []
-        data_tags = set(index) | set(path)
+    def __init__(self, root, fp):
+        self._root = root
+        self._fp = fp
 
-        if strict:
-            if not bool(tags - data_tags):
-                filtered.append(row)
-                continue
-            continue
+    def _handler(self):
+        return open(join(self._root, self._fp), 'r')
 
-        if (data_tags & tags):
-            filtered.append(row)
+    @property
+    def text(self):
+        return self._handler().read()
 
-    return filtered
+    def json(self):
+        return json.load(self._handler())
+
+
+class Record(dict):
+
+    def __init__(self, index, ref, tags, **data):
+        super(Record, self).__init__(self)
+        self["index"] = index
+        self["ref"] = ref
+        self["tags"] = tags or []
+        self.update((field, DataItem(ref, data[field])) for field in data)
+
+    @property
+    def index(self):
+        return self["index"]
+
+    @property
+    def tags(self):
+        return self["tags"]
+
+    @property
+    def ref(self):
+        return self["ref"]
+
+Element = Record
 
 
 class _BaseStorage:
 
-    def __init__(self, storage_path):
+    def __init__(self, storage_path, schema=None):
         self._storage_path = storage_path
-
-
-class Document(dict):
-
-    def __init__(self, **kwargs):
-        super(Document, self).__init__(self)
-        self.update(**kwargs)
-
-
-Element = Document
+        self._schema = schema
 
 
 class SimpleStorage(_BaseStorage):
@@ -61,34 +73,32 @@ class SimpleStorage(_BaseStorage):
     def __init__(self, *args, **kwargs):
         _BaseStorage.__init__(self, *args, **kwargs)
 
-    def read(self):
-        res = []
-        for root, _, files in os.walk(self._storage_path):
-            if files:
-                row = (basename(root),
-                       root,
-                       _read_tags(join(root, METADATA)),
-                       files)
-                res.append(row)
+    def _impose_scheme(self, root, files):
+        res = {}
+        for field in self._schema:
+            p = "|".join(self._schema[field]["match"])
+            for file in files:
+                data_fields = re.findall(p, file)
+                if data_fields:
+                    res[field] = data_fields[0]
+                    break
         return res
 
+    def read(self):
+        records = []
+        for root, _, files in os.walk(self._storage_path):
+            if files:
+                fields = self._impose_scheme(root, files)
 
-class Config:
-    load_data = True
-    pair = True
-    alias = {
-        "etalon": [
-            "etalon.*"
-        ],
-        "data": [
-            "data.*"
-        ]
-    }
+                elem = Element(
+                    index=basename(root),
+                    ref=root,
+                    tags=_read_tags(join(root, METADATA)),
+                    **fields
+                )
 
-    ignore = [
-        "^[0-9]"
-    ]
-
+                records.append(elem)
+        return records
 
 simple_storage = SimpleStorage
 
@@ -100,62 +110,26 @@ class StorageProxy:
         self._storage = storage
 
     def read(self):
-        res = []
-        for each in self._storage.read():
-            ignore_pattern = "|".join(self._config.ignore)
-            ref = each[1]
-            single_doc = Document(doc_id=each[0],
-                                  ref=ref,
-                                  tags=each[2])
-
-            for file in each[3]:
-                if re.findall(ignore_pattern, file):
-                    continue
-
-                name = basename(file)
-                if self._config.pair:
-                    name = name.split(".")[0]
-
-                alias = self._config.alias
-                for key in alias:
-                    pattern = "|".join(alias[key])
-
-                    if re.findall(pattern, file):
-                        name = key
-
-                single_doc[name] = read_txt(ref, file)
-
-            res.append(single_doc)
-        return res
-
-
-class Filter:
-    pass
+        return self._storage.read()
 
 
 class ThreeDB:
 
-    def __init__(self, path, config=None, storage_type=simple_storage):
+    def __init__(self, path, config=None, schema=None,
+                 storage_type=simple_storage):
         self._config = config or Config()
         self._path = path
-        self._storage = StorageProxy(self._config, storage_type(self._path))
-        self._filter = filter or Filter()
+        self._schema = schema or self._config.get("schema")
+        self._storage = StorageProxy(
+            self._config,
+            storage_type(self._path, schema=self._schema))
+        self._filter = SetFilter()
 
     def search(self, strict=False, *tags):
-        rows = self._storage.read()
+        records = self._storage.read()
         if not tags:
-            return rows
-        return _filter_rows(rows, strict, *tags)
+            return records
+        return self._filter.apply_filter(records, strict, tags)
 
 
 connect = ThreeDB
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-    path = "threedb/test"
-
-    db = ThreeDB(path)
-    for item in db.search('1', '9'):
-        pprint(item)
-        pprint(item['etalon'])
