@@ -2,6 +2,9 @@
 
 |Build Status| |Coverage| |Version|
 
+[![Build Status](https://travis-ci.org/EvgenyAK/3db/UtilityBehaviors.png)](https://travis-ci.org/EvgenyAK/3db/UtilityBehaviors)
+
+
 Небольшая БД для хранения и работы с данными используемыми при проведении [DDT](https://en.wikipedia.org/wiki/Data-driven_testing).
 
 ## Возможности хранения
