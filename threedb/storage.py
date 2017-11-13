@@ -106,16 +106,6 @@ class SimpleStorage(_BaseStorage):
 simple_storage = SimpleStorage
 
 
-class StorageProxy:
-
-    def __init__(self, config, storage):
-        self._config = config or Config()
-        self._storage = storage
-
-    def read(self):
-        return self._storage.read()
-
-
 class ThreeDB:
 
     def __init__(self, path, config=None, schema=None,
@@ -123,9 +113,7 @@ class ThreeDB:
         self._config = config or Config()
         self._path = path
         self._schema = schema or self._config.get("schema")
-        self._storage = StorageProxy(
-            self._config,
-            storage_type(self._path, schema=self._schema))
+        self._storage = storage_type(self._path, schema=self._schema)
         self._filter = SetFilter()
 
     def search(self, strict=False, *tags):
