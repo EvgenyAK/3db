@@ -8,7 +8,7 @@ class SetFilter:
         filtered = []
         tags = set(filter or [])
         for item in items:
-            data_tags = set(item.index) | set(item.tags)
+            data_tags = set([item.index]) | set(item.tags)
 
             if strict:
                 if not bool(tags - data_tags):
