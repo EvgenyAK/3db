@@ -43,7 +43,7 @@ print(first.text)
 
 >>> {"name": "Neo"}
 
-print(firs.json())
+print(first.json())
 
 >> {
     "name": "Neo"
@@ -100,5 +100,5 @@ db = threedb.connect("TestData/")
 items = db.search(*("serviceA",))
 print(items)
 
->>> {'ref': './10001_A', 'etalon_1_txt': <threedb.storage.DataItem object at 0x7f7de4563b38>, 'tags': [], 'data_1_txt': <threedb.storage.DataItem object at 0x7f7de4563b70>, 'index': '10001_A'}
+>>> {'ref': './10001_A', 'etalon_1_txt': <threedb.storage.DataItem object at 0x7f7de4563b38>, 'tags': ['serviceA'], 'data_1_txt': <threedb.storage.DataItem object at 0x7f7de4563b70>, 'index': '10001_A'}
 ```
