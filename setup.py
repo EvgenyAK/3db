@@ -7,7 +7,7 @@ setup(
     name="threedb",
     version="1.0",
     packages=find_packages(),
-    long_description=open(join(dirname(__file__), 'README.md')).read(),
+    long_description=open(join(dirname(__file__), 'README.rst')).read(),
     author="Kurochkin Evgeny",
     keywords="ddt testing testdata",
     url="https://github.com/EvgenyAK/3db",
